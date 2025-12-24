@@ -1,28 +1,63 @@
 import { useState } from 'react';
 import { Layout } from '@/components/layout/Layout';
 import { QuotationCard } from '@/components/quotation/QuotationCard';
-import { useQuotations } from '@/hooks/useQuotations';
+import { useSupabaseQuotations, QuotationWithAgents } from '@/hooks/useSupabaseQuotations';
 import { generateQuotationPDF } from '@/lib/pdfGenerator';
+import { Quotation } from '@/types/quotation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Link } from 'react-router-dom';
-import { Plus, Search, Filter } from 'lucide-react';
+import { Plus, Search, Filter, Loader2 } from 'lucide-react';
 
 const QuotationsList = () => {
-  const { quotations, deleteQuotation } = useQuotations();
+  const { quotations, loading, deleteQuotation } = useSupabaseQuotations();
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+
+  const mapToQuotation = (q: QuotationWithAgents): Quotation => ({
+    id: q.id,
+    clientName: q.client_name,
+    clientEmail: q.client_email,
+    clientCompany: q.client_company || undefined,
+    clientPhone: q.client_phone || undefined,
+    date: q.date,
+    validUntil: q.valid_until,
+    agents: q.agents.map(a => ({
+      id: a.id,
+      name: a.name,
+      description: a.description || undefined,
+      customCost: Number(a.custom_cost),
+      customPrice: Number(a.custom_price),
+      quantity: a.quantity,
+      features: a.features.map(f => ({
+        id: f.id,
+        name: f.name,
+        description: f.description || undefined,
+        baseCost: Number(f.base_cost),
+        basePrice: Number(f.base_price),
+        isEditable: true,
+      })),
+    })),
+    implementationCost: Number(q.implementation_cost),
+    implementationPrice: Number(q.implementation_price),
+    monthlyMaintenanceCost: Number(q.monthly_maintenance_cost),
+    monthlyMaintenancePrice: Number(q.monthly_maintenance_price),
+    notes: q.notes || undefined,
+    status: q.status,
+    totalCost: Number(q.total_cost),
+    totalPrice: Number(q.total_price),
+    profit: Number(q.profit),
+  });
 
   const filteredQuotations = quotations
     .filter(q => {
       const matchesSearch = 
-        q.clientName.toLowerCase().includes(search.toLowerCase()) ||
-        q.clientCompany?.toLowerCase().includes(search.toLowerCase()) ||
-        q.clientEmail.toLowerCase().includes(search.toLowerCase());
+        q.client_name.toLowerCase().includes(search.toLowerCase()) ||
+        q.client_company?.toLowerCase().includes(search.toLowerCase()) ||
+        q.client_email.toLowerCase().includes(search.toLowerCase());
       const matchesStatus = statusFilter === 'all' || q.status === statusFilter;
       return matchesSearch && matchesStatus;
-    })
-    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    });
 
   const statusOptions = [
     { value: 'all', label: 'Todas' },
@@ -31,6 +66,16 @@ const QuotationsList = () => {
     { value: 'accepted', label: 'Aceptadas' },
     { value: 'rejected', label: 'Rechazadas' },
   ];
+
+  if (loading) {
+    return (
+      <Layout>
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <Loader2 className="w-8 h-8 text-primary animate-spin" />
+        </div>
+      </Layout>
+    );
+  }
 
   return (
     <Layout>
@@ -64,7 +109,7 @@ const QuotationsList = () => {
               className="pl-10"
             />
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
             {statusOptions.map(option => (
               <Button
                 key={option.value}
@@ -84,9 +129,9 @@ const QuotationsList = () => {
             {filteredQuotations.map(quotation => (
               <QuotationCard
                 key={quotation.id}
-                quotation={quotation}
+                quotation={mapToQuotation(quotation)}
                 onDelete={deleteQuotation}
-                onDownload={generateQuotationPDF}
+                onDownload={(q) => generateQuotationPDF(q)}
               />
             ))}
           </div>

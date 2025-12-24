@@ -14,7 +14,256 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      agent_features: {
+        Row: {
+          base_cost: number
+          base_price: number
+          created_at: string
+          description: string | null
+          id: string
+          is_editable: boolean | null
+          name: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          base_cost?: number
+          base_price?: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_editable?: boolean | null
+          name: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          base_cost?: number
+          base_price?: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_editable?: boolean | null
+          name?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      agent_templates: {
+        Row: {
+          base_cost: number
+          base_price: number
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          base_cost?: number
+          base_price?: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          base_cost?: number
+          base_price?: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      quotation_agent_features: {
+        Row: {
+          base_cost: number
+          base_price: number
+          description: string | null
+          id: string
+          name: string
+          quotation_agent_id: string
+        }
+        Insert: {
+          base_cost?: number
+          base_price?: number
+          description?: string | null
+          id?: string
+          name: string
+          quotation_agent_id: string
+        }
+        Update: {
+          base_cost?: number
+          base_price?: number
+          description?: string | null
+          id?: string
+          name?: string
+          quotation_agent_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quotation_agent_features_quotation_agent_id_fkey"
+            columns: ["quotation_agent_id"]
+            isOneToOne: false
+            referencedRelation: "quotation_agents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      quotation_agents: {
+        Row: {
+          created_at: string
+          custom_cost: number
+          custom_price: number
+          description: string | null
+          id: string
+          name: string
+          quantity: number
+          quotation_id: string
+        }
+        Insert: {
+          created_at?: string
+          custom_cost?: number
+          custom_price?: number
+          description?: string | null
+          id?: string
+          name: string
+          quantity?: number
+          quotation_id: string
+        }
+        Update: {
+          created_at?: string
+          custom_cost?: number
+          custom_price?: number
+          description?: string | null
+          id?: string
+          name?: string
+          quantity?: number
+          quotation_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quotation_agents_quotation_id_fkey"
+            columns: ["quotation_id"]
+            isOneToOne: false
+            referencedRelation: "quotations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      quotations: {
+        Row: {
+          client_company: string | null
+          client_email: string
+          client_name: string
+          client_phone: string | null
+          created_at: string
+          date: string
+          id: string
+          implementation_cost: number
+          implementation_price: number
+          monthly_maintenance_cost: number
+          monthly_maintenance_price: number
+          notes: string | null
+          profit: number
+          status: Database["public"]["Enums"]["quotation_status"]
+          total_cost: number
+          total_price: number
+          updated_at: string
+          user_id: string
+          valid_until: string
+        }
+        Insert: {
+          client_company?: string | null
+          client_email: string
+          client_name: string
+          client_phone?: string | null
+          created_at?: string
+          date?: string
+          id?: string
+          implementation_cost?: number
+          implementation_price?: number
+          monthly_maintenance_cost?: number
+          monthly_maintenance_price?: number
+          notes?: string | null
+          profit?: number
+          status?: Database["public"]["Enums"]["quotation_status"]
+          total_cost?: number
+          total_price?: number
+          updated_at?: string
+          user_id: string
+          valid_until?: string
+        }
+        Update: {
+          client_company?: string | null
+          client_email?: string
+          client_name?: string
+          client_phone?: string | null
+          created_at?: string
+          date?: string
+          id?: string
+          implementation_cost?: number
+          implementation_price?: number
+          monthly_maintenance_cost?: number
+          monthly_maintenance_price?: number
+          notes?: string | null
+          profit?: number
+          status?: Database["public"]["Enums"]["quotation_status"]
+          total_cost?: number
+          total_price?: number
+          updated_at?: string
+          user_id?: string
+          valid_until?: string
+        }
+        Relationships: []
+      }
+      template_features: {
+        Row: {
+          base_cost: number
+          base_price: number
+          feature_id: string
+          id: string
+          template_id: string
+        }
+        Insert: {
+          base_cost?: number
+          base_price?: number
+          feature_id: string
+          id?: string
+          template_id: string
+        }
+        Update: {
+          base_cost?: number
+          base_price?: number
+          feature_id?: string
+          id?: string
+          template_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "template_features_feature_id_fkey"
+            columns: ["feature_id"]
+            isOneToOne: false
+            referencedRelation: "agent_features"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "template_features_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "agent_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -23,7 +272,7 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      quotation_status: "draft" | "sent" | "accepted" | "rejected"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +399,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      quotation_status: ["draft", "sent", "accepted", "rejected"],
+    },
   },
 } as const
