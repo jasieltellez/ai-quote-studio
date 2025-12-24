@@ -435,8 +435,8 @@ export const useSupabaseQuotations = () => {
         });
     }
 
-    await fetchFeatures();
-  };*/
+    await fetchFeatures();*/
+  };
 
   return {
     quotations,
