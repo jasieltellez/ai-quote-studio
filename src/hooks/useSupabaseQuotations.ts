@@ -412,7 +412,7 @@ export const useSupabaseQuotations = () => {
   const initializeDefaultFeatures = async () => {
     if (!user || features.length > 0) return;
 
-    const defaultFeatures = [
+   /* const defaultFeatures = [
       { name: 'Procesamiento de Lenguaje Natural', description: 'Comprensión y generación de texto', baseCost: 200, basePrice: 450 },
       { name: 'Integración de Voz', description: 'Reconocimiento y síntesis de voz', baseCost: 350, basePrice: 750 },
       { name: 'Soporte Multiidioma', description: 'Español, Inglés, Portugués', baseCost: 150, basePrice: 350 },
@@ -436,7 +436,7 @@ export const useSupabaseQuotations = () => {
     }
 
     await fetchFeatures();
-  };
+  };*/
 
   return {
     quotations,
