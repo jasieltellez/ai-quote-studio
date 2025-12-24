@@ -1,31 +1,48 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Layout } from '@/components/layout/Layout';
-import { AgentSelector } from '@/components/quotation/AgentSelector';
+import { AgentSelectorDB } from '@/components/quotation/AgentSelectorDB';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { useQuotations } from '@/hooks/useQuotations';
-import { Quotation, QuotationAgent } from '@/types/quotation';
+import { useSupabaseQuotations, TemplateWithFeatures } from '@/hooks/useSupabaseQuotations';
 import { generateQuotationPDF } from '@/lib/pdfGenerator';
+import { Quotation } from '@/types/quotation';
 import { toast } from 'sonner';
-import { Save, FileDown, ArrowLeft, Calculator } from 'lucide-react';
+import { Save, FileDown, ArrowLeft, Calculator, Loader2 } from 'lucide-react';
+
+interface SelectedAgent {
+  id: string;
+  name: string;
+  description?: string;
+  customCost: number;
+  customPrice: number;
+  quantity: number;
+  features: {
+    id: string;
+    name: string;
+    description?: string;
+    baseCost: number;
+    basePrice: number;
+  }[];
+}
 
 const NewQuotation = () => {
   const navigate = useNavigate();
-  const { templates, saveQuotation } = useQuotations();
+  const { templates, features, saveQuotation, loading } = useSupabaseQuotations();
 
   const [clientName, setClientName] = useState('');
   const [clientEmail, setClientEmail] = useState('');
   const [clientCompany, setClientCompany] = useState('');
   const [clientPhone, setClientPhone] = useState('');
-  const [agents, setAgents] = useState<QuotationAgent[]>([]);
+  const [agents, setAgents] = useState<SelectedAgent[]>([]);
   const [implementationCost, setImplementationCost] = useState(500);
   const [implementationPrice, setImplementationPrice] = useState(1500);
   const [monthlyMaintenanceCost, setMonthlyMaintenanceCost] = useState(200);
   const [monthlyMaintenancePrice, setMonthlyMaintenancePrice] = useState(500);
   const [notes, setNotes] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
 
   const calculateTotals = () => {
     const agentsTotalCost = agents.reduce((sum, a) => sum + (a.customCost * a.quantity), 0);
@@ -47,7 +64,7 @@ const NewQuotation = () => {
     }).format(value);
   };
 
-  const createQuotation = (): Quotation => {
+  const createQuotationForPDF = (): Quotation => {
     const now = new Date();
     const validUntil = new Date(now);
     validUntil.setDate(validUntil.getDate() + 30);
@@ -60,7 +77,10 @@ const NewQuotation = () => {
       clientPhone,
       date: now.toISOString(),
       validUntil: validUntil.toISOString(),
-      agents,
+      agents: agents.map(a => ({
+        ...a,
+        features: a.features.map(f => ({ ...f, isEditable: true })),
+      })),
       implementationCost,
       implementationPrice,
       monthlyMaintenanceCost,
@@ -73,7 +93,7 @@ const NewQuotation = () => {
     };
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!clientName || !clientEmail) {
       toast.error('Por favor completa los datos del cliente');
       return;
@@ -83,13 +103,44 @@ const NewQuotation = () => {
       return;
     }
 
-    const quotation = createQuotation();
-    saveQuotation(quotation);
-    toast.success('Cotización guardada correctamente');
-    navigate('/');
+    setIsSaving(true);
+    const result = await saveQuotation({
+      clientName,
+      clientEmail,
+      clientCompany,
+      clientPhone,
+      implementationCost,
+      implementationPrice,
+      monthlyMaintenanceCost,
+      monthlyMaintenancePrice,
+      notes,
+      status: 'draft',
+      totalCost: totals.totalCost,
+      totalPrice: totals.totalPrice,
+      profit: totals.profit,
+      agents: agents.map(a => ({
+        name: a.name,
+        description: a.description,
+        customCost: a.customCost,
+        customPrice: a.customPrice,
+        quantity: a.quantity,
+        features: a.features.map(f => ({
+          name: f.name,
+          description: f.description,
+          baseCost: f.baseCost,
+          basePrice: f.basePrice,
+        })),
+      })),
+    });
+    setIsSaving(false);
+
+    if (result) {
+      toast.success('Cotización guardada correctamente');
+      navigate('/');
+    }
   };
 
-  const handleDownload = () => {
+  const handleDownload = async () => {
     if (!clientName || !clientEmail) {
       toast.error('Por favor completa los datos del cliente');
       return;
@@ -99,11 +150,51 @@ const NewQuotation = () => {
       return;
     }
 
-    const quotation = createQuotation();
-    saveQuotation(quotation);
+    setIsSaving(true);
+    await saveQuotation({
+      clientName,
+      clientEmail,
+      clientCompany,
+      clientPhone,
+      implementationCost,
+      implementationPrice,
+      monthlyMaintenanceCost,
+      monthlyMaintenancePrice,
+      notes,
+      status: 'draft',
+      totalCost: totals.totalCost,
+      totalPrice: totals.totalPrice,
+      profit: totals.profit,
+      agents: agents.map(a => ({
+        name: a.name,
+        description: a.description,
+        customCost: a.customCost,
+        customPrice: a.customPrice,
+        quantity: a.quantity,
+        features: a.features.map(f => ({
+          name: f.name,
+          description: f.description,
+          baseCost: f.baseCost,
+          basePrice: f.basePrice,
+        })),
+      })),
+    });
+    setIsSaving(false);
+
+    const quotation = createQuotationForPDF();
     generateQuotationPDF(quotation);
     toast.success('PDF generado correctamente');
   };
+
+  if (loading) {
+    return (
+      <Layout>
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <Loader2 className="w-8 h-8 text-primary animate-spin" />
+        </div>
+      </Layout>
+    );
+  }
 
   return (
     <Layout>
@@ -178,8 +269,9 @@ const NewQuotation = () => {
               <h2 className="text-lg font-display font-semibold text-foreground mb-4">
                 Agentes de IA
               </h2>
-              <AgentSelector
+              <AgentSelectorDB
                 templates={templates}
+                features={features}
                 selectedAgents={agents}
                 onAgentsChange={setAgents}
               />
@@ -297,11 +389,11 @@ const NewQuotation = () => {
               </div>
 
               <div className="space-y-3 pt-4">
-                <Button onClick={handleSave} className="w-full gap-2">
-                  <Save className="w-4 h-4" />
+                <Button onClick={handleSave} className="w-full gap-2" disabled={isSaving}>
+                  {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
                   Guardar Cotización
                 </Button>
-                <Button onClick={handleDownload} variant="outline" className="w-full gap-2">
+                <Button onClick={handleDownload} variant="outline" className="w-full gap-2" disabled={isSaving}>
                   <FileDown className="w-4 h-4" />
                   Descargar PDF
                 </Button>

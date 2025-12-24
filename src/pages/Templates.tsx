@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { Layout } from '@/components/layout/Layout';
-import { useQuotations } from '@/hooks/useQuotations';
-import { AgentTemplate, AgentFeature, defaultAgentFeatures } from '@/types/quotation';
+import { useSupabaseQuotations, TemplateWithFeatures } from '@/hooks/useSupabaseQuotations';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -9,66 +8,69 @@ import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { toast } from 'sonner';
-import { Plus, Bot, Trash2, Edit, Save } from 'lucide-react';
+import { Plus, Bot, Trash2, Edit, Save, Loader2 } from 'lucide-react';
 
 const Templates = () => {
-  const { templates, saveTemplate, deleteTemplate } = useQuotations();
+  const { templates, features, saveTemplate, deleteTemplate, loading } = useSupabaseQuotations();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [editingTemplate, setEditingTemplate] = useState<AgentTemplate | null>(null);
+  const [editingTemplate, setEditingTemplate] = useState<TemplateWithFeatures | null>(null);
 
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [baseCost, setBaseCost] = useState(500);
   const [basePrice, setBasePrice] = useState(1500);
-  const [selectedFeatures, setSelectedFeatures] = useState<AgentFeature[]>([]);
+  const [selectedFeatureIds, setSelectedFeatureIds] = useState<string[]>([]);
+  const [isSaving, setIsSaving] = useState(false);
 
   const resetForm = () => {
     setName('');
     setDescription('');
     setBaseCost(500);
     setBasePrice(1500);
-    setSelectedFeatures([]);
+    setSelectedFeatureIds([]);
     setEditingTemplate(null);
   };
 
-  const openEditDialog = (template: AgentTemplate) => {
+  const openEditDialog = (template: TemplateWithFeatures) => {
     setEditingTemplate(template);
     setName(template.name);
-    setDescription(template.description);
-    setBaseCost(template.baseCost);
-    setBasePrice(template.basePrice);
-    setSelectedFeatures([...template.defaultFeatures]);
+    setDescription(template.description || '');
+    setBaseCost(Number(template.base_cost));
+    setBasePrice(Number(template.base_price));
+    setSelectedFeatureIds(template.features.map(f => f.feature.id));
     setIsDialogOpen(true);
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!name) {
       toast.error('Por favor ingresa un nombre');
       return;
     }
 
-    const template: AgentTemplate = {
-      id: editingTemplate?.id || `template-${Date.now()}`,
+    setIsSaving(true);
+    const result = await saveTemplate({
+      id: editingTemplate?.id,
       name,
       description,
-      defaultFeatures: selectedFeatures,
       baseCost,
       basePrice,
-    };
+      featureIds: selectedFeatureIds,
+    });
+    setIsSaving(false);
 
-    saveTemplate(template);
-    toast.success(editingTemplate ? 'Plantilla actualizada' : 'Plantilla creada');
-    setIsDialogOpen(false);
-    resetForm();
+    if (result) {
+      toast.success(editingTemplate ? 'Plantilla actualizada' : 'Plantilla creada');
+      setIsDialogOpen(false);
+      resetForm();
+    }
   };
 
-  const toggleFeature = (feature: AgentFeature) => {
-    const exists = selectedFeatures.some(f => f.id === feature.id);
-    if (exists) {
-      setSelectedFeatures(selectedFeatures.filter(f => f.id !== feature.id));
-    } else {
-      setSelectedFeatures([...selectedFeatures, feature]);
-    }
+  const toggleFeature = (featureId: string) => {
+    setSelectedFeatureIds(prev =>
+      prev.includes(featureId)
+        ? prev.filter(id => id !== featureId)
+        : [...prev, featureId]
+    );
   };
 
   const formatCurrency = (value: number) => {
@@ -77,6 +79,16 @@ const Templates = () => {
       currency: 'USD',
     }).format(value);
   };
+
+  if (loading) {
+    return (
+      <Layout>
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <Loader2 className="w-8 h-8 text-primary animate-spin" />
+        </div>
+      </Layout>
+    );
+  }
 
   return (
     <Layout>
@@ -149,41 +161,47 @@ const Templates = () => {
 
                 <div className="space-y-3">
                   <Label>Características Incluidas</Label>
-                  <div className="grid grid-cols-2 gap-3">
-                    {defaultAgentFeatures.map(feature => {
-                      const isSelected = selectedFeatures.some(f => f.id === feature.id);
-                      return (
-                        <div
-                          key={feature.id}
-                          className={`p-3 rounded-lg border cursor-pointer transition-all ${
-                            isSelected
-                              ? 'border-primary bg-primary/5'
-                              : 'border-border hover:border-primary/50'
-                          }`}
-                          onClick={() => toggleFeature(feature)}
-                        >
-                          <div className="flex items-start gap-3">
-                            <Checkbox checked={isSelected} />
-                            <div>
-                              <p className="font-medium text-sm">{feature.name}</p>
-                              <p className="text-xs text-muted-foreground">{feature.description}</p>
-                              <p className="text-xs text-primary mt-1">
-                                {formatCurrency(feature.basePrice)}
-                              </p>
+                  {features.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">
+                      No hay características disponibles. Ve a Configuración para crear algunas.
+                    </p>
+                  ) : (
+                    <div className="grid grid-cols-2 gap-3">
+                      {features.map(feature => {
+                        const isSelected = selectedFeatureIds.includes(feature.id);
+                        return (
+                          <div
+                            key={feature.id}
+                            className={`p-3 rounded-lg border cursor-pointer transition-all ${
+                              isSelected
+                                ? 'border-primary bg-primary/5'
+                                : 'border-border hover:border-primary/50'
+                            }`}
+                            onClick={() => toggleFeature(feature.id)}
+                          >
+                            <div className="flex items-start gap-3">
+                              <Checkbox checked={isSelected} />
+                              <div>
+                                <p className="font-medium text-sm">{feature.name}</p>
+                                <p className="text-xs text-muted-foreground">{feature.description}</p>
+                                <p className="text-xs text-primary mt-1">
+                                  {formatCurrency(Number(feature.base_price))}
+                                </p>
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      );
-                    })}
-                  </div>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
 
                 <div className="flex justify-end gap-3 pt-4">
                   <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
                     Cancelar
                   </Button>
-                  <Button onClick={handleSave} className="gap-2">
-                    <Save className="w-4 h-4" />
+                  <Button onClick={handleSave} className="gap-2" disabled={isSaving}>
+                    {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
                     Guardar
                   </Button>
                 </div>
@@ -193,74 +211,87 @@ const Templates = () => {
         </div>
 
         {/* Templates Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {templates.map(template => (
-            <div key={template.id} className="glass rounded-xl p-5">
-              <div className="flex items-start justify-between mb-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                    <Bot className="w-5 h-5 text-primary" />
+        {templates.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {templates.map(template => (
+              <div key={template.id} className="glass rounded-xl p-5">
+                <div className="flex items-start justify-between mb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                      <Bot className="w-5 h-5 text-primary" />
+                    </div>
+                    <div>
+                      <h3 className="font-display font-semibold text-foreground">
+                        {template.name}
+                      </h3>
+                      <p className="text-xs text-muted-foreground">
+                        {template.features.length} características
+                      </p>
+                    </div>
                   </div>
+                </div>
+
+                <p className="text-sm text-muted-foreground mb-4">{template.description}</p>
+
+                <div className="flex flex-wrap gap-1 mb-4">
+                  {template.features.slice(0, 3).map(tf => (
+                    <span
+                      key={tf.id}
+                      className="px-2 py-1 text-xs rounded-md bg-secondary text-secondary-foreground"
+                    >
+                      {tf.feature.name}
+                    </span>
+                  ))}
+                  {template.features.length > 3 && (
+                    <span className="px-2 py-1 text-xs rounded-md bg-secondary text-muted-foreground">
+                      +{template.features.length - 3} más
+                    </span>
+                  )}
+                </div>
+
+                <div className="flex items-center justify-between pt-4 border-t border-border/50">
                   <div>
-                    <h3 className="font-display font-semibold text-foreground">
-                      {template.name}
-                    </h3>
-                    <p className="text-xs text-muted-foreground">
-                      {template.defaultFeatures.length} características
+                    <p className="text-xs text-muted-foreground">Precio base</p>
+                    <p className="font-display font-bold text-primary">
+                      {formatCurrency(Number(template.base_price))}
                     </p>
                   </div>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => openEditDialog(template)}
+                    >
+                      <Edit className="w-4 h-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => deleteTemplate(template.id)}
+                      className="text-destructive hover:text-destructive"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
                 </div>
               </div>
-
-              <p className="text-sm text-muted-foreground mb-4">{template.description}</p>
-
-              <div className="flex flex-wrap gap-1 mb-4">
-                {template.defaultFeatures.slice(0, 3).map(feature => (
-                  <span
-                    key={feature.id}
-                    className="px-2 py-1 text-xs rounded-md bg-secondary text-secondary-foreground"
-                  >
-                    {feature.name}
-                  </span>
-                ))}
-                {template.defaultFeatures.length > 3 && (
-                  <span className="px-2 py-1 text-xs rounded-md bg-secondary text-muted-foreground">
-                    +{template.defaultFeatures.length - 3} más
-                  </span>
-                )}
-              </div>
-
-              <div className="flex items-center justify-between pt-4 border-t border-border/50">
-                <div>
-                  <p className="text-xs text-muted-foreground">Precio base</p>
-                  <p className="font-display font-bold text-primary">
-                    {formatCurrency(template.basePrice)}
-                  </p>
-                </div>
-                <div className="flex gap-2">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => openEditDialog(template)}
-                  >
-                    <Edit className="w-4 h-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => {
-                      deleteTemplate(template.id);
-                      toast.success('Plantilla eliminada');
-                    }}
-                    className="text-destructive hover:text-destructive"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        ) : (
+          <div className="glass rounded-xl p-12 text-center">
+            <Bot className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+            <h3 className="font-display font-semibold text-foreground mb-2">
+              No hay plantillas
+            </h3>
+            <p className="text-muted-foreground mb-4">
+              Crea tu primera plantilla de agente
+            </p>
+            <Button onClick={() => setIsDialogOpen(true)} className="gap-2">
+              <Plus className="w-4 h-4" />
+              Nueva Plantilla
+            </Button>
+          </div>
+        )}
       </div>
     </Layout>
   );

@@ -1,27 +1,31 @@
+import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Layout } from '@/components/layout/Layout';
 import { StatsCard } from '@/components/dashboard/StatsCard';
 import { QuotationCard } from '@/components/quotation/QuotationCard';
-import { useQuotations } from '@/hooks/useQuotations';
+import { useSupabaseQuotations, QuotationWithAgents } from '@/hooks/useSupabaseQuotations';
 import { generateQuotationPDF } from '@/lib/pdfGenerator';
 import { Button } from '@/components/ui/button';
-import { FileText, DollarSign, TrendingUp, Users, Plus, ArrowRight } from 'lucide-react';
+import { FileText, DollarSign, TrendingUp, Users, Plus, ArrowRight, Loader2 } from 'lucide-react';
+import { Quotation } from '@/types/quotation';
 
 const Dashboard = () => {
-  const { quotations, deleteQuotation } = useQuotations();
+  const { quotations, loading, deleteQuotation, initializeDefaultFeatures } = useSupabaseQuotations();
+
+  useEffect(() => {
+    initializeDefaultFeatures();
+  }, [initializeDefaultFeatures]);
 
   const stats = {
     totalQuotations: quotations.length,
-    totalValue: quotations.reduce((sum, q) => sum + q.totalPrice, 0),
+    totalValue: quotations.reduce((sum, q) => sum + Number(q.total_price), 0),
     acceptedQuotations: quotations.filter(q => q.status === 'accepted').length,
     monthlyRecurring: quotations
       .filter(q => q.status === 'accepted')
-      .reduce((sum, q) => sum + q.monthlyMaintenancePrice, 0),
+      .reduce((sum, q) => sum + Number(q.monthly_maintenance_price), 0),
   };
 
-  const recentQuotations = quotations
-    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-    .slice(0, 4);
+  const recentQuotations = quotations.slice(0, 4);
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('es-MX', {
@@ -30,6 +34,51 @@ const Dashboard = () => {
       minimumFractionDigits: 0,
     }).format(value);
   };
+
+  const mapToQuotation = (q: QuotationWithAgents): Quotation => ({
+    id: q.id,
+    clientName: q.client_name,
+    clientEmail: q.client_email,
+    clientCompany: q.client_company || undefined,
+    clientPhone: q.client_phone || undefined,
+    date: q.date,
+    validUntil: q.valid_until,
+    agents: q.agents.map(a => ({
+      id: a.id,
+      name: a.name,
+      description: a.description || undefined,
+      customCost: Number(a.custom_cost),
+      customPrice: Number(a.custom_price),
+      quantity: a.quantity,
+      features: a.features.map(f => ({
+        id: f.id,
+        name: f.name,
+        description: f.description || undefined,
+        baseCost: Number(f.base_cost),
+        basePrice: Number(f.base_price),
+        isEditable: true,
+      })),
+    })),
+    implementationCost: Number(q.implementation_cost),
+    implementationPrice: Number(q.implementation_price),
+    monthlyMaintenanceCost: Number(q.monthly_maintenance_cost),
+    monthlyMaintenancePrice: Number(q.monthly_maintenance_price),
+    notes: q.notes || undefined,
+    status: q.status,
+    totalCost: Number(q.total_cost),
+    totalPrice: Number(q.total_price),
+    profit: Number(q.profit),
+  });
+
+  if (loading) {
+    return (
+      <Layout>
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <Loader2 className="w-8 h-8 text-primary animate-spin" />
+        </div>
+      </Layout>
+    );
+  }
 
   return (
     <Layout>
@@ -99,9 +148,9 @@ const Dashboard = () => {
               {recentQuotations.map(quotation => (
                 <QuotationCard
                   key={quotation.id}
-                  quotation={quotation}
+                  quotation={mapToQuotation(quotation)}
                   onDelete={deleteQuotation}
-                  onDownload={generateQuotationPDF}
+                  onDownload={(q) => generateQuotationPDF(q)}
                 />
               ))}
             </div>

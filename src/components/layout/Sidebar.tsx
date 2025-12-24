@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { 
   FileText, 
   Settings, 
@@ -7,10 +7,12 @@ import {
   LayoutDashboard,
   Bot,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  LogOut
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
+import { useAuth } from '@/contexts/AuthContext';
 
 const menuItems = [
   { icon: LayoutDashboard, label: 'Dashboard', path: '/' },
@@ -23,6 +25,13 @@ const menuItems = [
 export const Sidebar = () => {
   const [collapsed, setCollapsed] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
+  const { signOut, user } = useAuth();
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate('/auth');
+  };
 
   return (
     <aside 
@@ -77,13 +86,24 @@ export const Sidebar = () => {
         </nav>
 
         {/* Footer */}
-        {!collapsed && (
-          <div className="p-4 border-t border-border/50">
-            <div className="text-xs text-muted-foreground text-center">
-              Sistema de Cotizaciones v1.0
+        <div className="p-4 border-t border-border/50 space-y-3">
+          {!collapsed && user && (
+            <div className="text-xs text-muted-foreground truncate px-2">
+              {user.email}
             </div>
-          </div>
-        )}
+          )}
+          <Button
+            variant="ghost"
+            onClick={handleSignOut}
+            className={cn(
+              "w-full justify-start gap-3 text-muted-foreground hover:text-destructive",
+              collapsed && "justify-center px-0"
+            )}
+          >
+            <LogOut className="w-4 h-4" />
+            {!collapsed && <span>Cerrar Sesión</span>}
+          </Button>
+        </div>
       </div>
     </aside>
   );
