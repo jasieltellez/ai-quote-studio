@@ -85,9 +85,14 @@ export const generateQuotationPDF = (quotation: Quotation) => {
   // Get the Y position after the table
   const finalY = (doc as any).lastAutoTable.finalY + 15;
 
+  // Calculate subtotal for display
+  const subtotal = quotation.implementationPrice + quotation.monthlyMaintenancePrice + 
+    quotation.agents.reduce((sum, a) => sum + (a.customPrice * a.quantity), 0);
+
   // Summary
+  const summaryHeight = quotation.discount > 0 ? 70 : 55;
   doc.setFillColor(241, 245, 249);
-  doc.roundedRect(110, finalY, 80, 55, 3, 3, 'F');
+  doc.roundedRect(110, finalY, 80, summaryHeight, 3, 3, 'F');
   
   doc.setTextColor(60, 60, 60);
   doc.setFontSize(10);
@@ -98,15 +103,30 @@ export const generateQuotationPDF = (quotation: Quotation) => {
   
   doc.text('Mantenimiento Mensual:', 115, finalY + 22);
   doc.text(formatCurrency(quotation.monthlyMaintenancePrice), 180, finalY + 22, { align: 'right' });
+
+  let currentY = finalY + 30;
+
+  if (quotation.discount > 0) {
+    doc.text('Subtotal:', 115, currentY);
+    doc.text(formatCurrency(subtotal), 180, currentY, { align: 'right' });
+    currentY += 10;
+    
+    doc.setTextColor(220, 38, 38);
+    doc.text('Descuento:', 115, currentY);
+    doc.text(`-${formatCurrency(quotation.discount)}`, 180, currentY, { align: 'right' });
+    currentY += 8;
+    doc.setTextColor(60, 60, 60);
+  }
   
   doc.setDrawColor(200, 200, 200);
-  doc.line(115, finalY + 30, 185, finalY + 30);
+  doc.line(115, currentY, 185, currentY);
+  currentY += 12;
   
   doc.setFontSize(12);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(20, 184, 166);
-  doc.text('Total Inicial:', 115, finalY + 42);
-  doc.text(formatCurrency(quotation.totalPrice), 180, finalY + 42, { align: 'right' });
+  doc.text('Total Final:', 115, currentY);
+  doc.text(formatCurrency(quotation.totalPrice), 180, currentY, { align: 'right' });
 
   // Notes
   if (quotation.notes) {

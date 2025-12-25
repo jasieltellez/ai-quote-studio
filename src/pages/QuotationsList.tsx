@@ -42,6 +42,7 @@ const QuotationsList = () => {
     implementationPrice: Number(q.implementation_price),
     monthlyMaintenanceCost: Number(q.monthly_maintenance_cost),
     monthlyMaintenancePrice: Number(q.monthly_maintenance_price),
+    discount: Number(q.discount),
     notes: q.notes || undefined,
     status: q.status,
     totalCost: Number(q.total_cost),

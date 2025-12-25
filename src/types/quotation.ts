@@ -30,6 +30,7 @@ export interface Quotation {
   implementationPrice: number;
   monthlyMaintenanceCost: number;
   monthlyMaintenancePrice: number;
+  discount: number;
   notes?: string;
   status: 'draft' | 'sent' | 'accepted' | 'rejected';
   totalCost: number;

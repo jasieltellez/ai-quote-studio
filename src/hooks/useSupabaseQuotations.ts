@@ -139,6 +139,7 @@ export const useSupabaseQuotations = () => {
     implementationPrice: number;
     monthlyMaintenanceCost: number;
     monthlyMaintenancePrice: number;
+    discount: number;
     notes?: string;
     status: 'draft' | 'sent' | 'accepted' | 'rejected';
     totalCost: number;
@@ -173,6 +174,7 @@ export const useSupabaseQuotations = () => {
         implementation_price: quotation.implementationPrice,
         monthly_maintenance_cost: quotation.monthlyMaintenanceCost,
         monthly_maintenance_price: quotation.monthlyMaintenancePrice,
+        discount: quotation.discount,
         notes: quotation.notes,
         status: quotation.status,
         total_cost: quotation.totalCost,
