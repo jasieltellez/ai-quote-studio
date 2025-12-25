@@ -167,6 +167,7 @@ export type Database = {
           client_phone: string | null
           created_at: string
           date: string
+          discount: number
           id: string
           implementation_cost: number
           implementation_price: number
@@ -188,6 +189,7 @@ export type Database = {
           client_phone?: string | null
           created_at?: string
           date?: string
+          discount?: number
           id?: string
           implementation_cost?: number
           implementation_price?: number
@@ -209,6 +211,7 @@ export type Database = {
           client_phone?: string | null
           created_at?: string
           date?: string
+          discount?: number
           id?: string
           implementation_cost?: number
           implementation_price?: number

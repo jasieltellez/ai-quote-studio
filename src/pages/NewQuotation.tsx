@@ -41,6 +41,7 @@ const NewQuotation = () => {
   const [implementationPrice, setImplementationPrice] = useState(1500);
   const [monthlyMaintenanceCost, setMonthlyMaintenanceCost] = useState(200);
   const [monthlyMaintenancePrice, setMonthlyMaintenancePrice] = useState(500);
+  const [discount, setDiscount] = useState(0);
   const [notes, setNotes] = useState('');
   const [isSaving, setIsSaving] = useState(false);
 
@@ -48,11 +49,12 @@ const NewQuotation = () => {
     const agentsTotalCost = agents.reduce((sum, a) => sum + (a.customCost * a.quantity), 0);
     const agentsTotalPrice = agents.reduce((sum, a) => sum + (a.customPrice * a.quantity), 0);
     
+    const subtotal = agentsTotalPrice + implementationPrice + monthlyMaintenancePrice;
     const totalCost = agentsTotalCost + implementationCost + monthlyMaintenanceCost;
-    const totalPrice = agentsTotalPrice + implementationPrice + monthlyMaintenancePrice;
+    const totalPrice = subtotal - discount;
     const profit = totalPrice - totalCost;
 
-    return { totalCost, totalPrice, profit, agentsTotalCost, agentsTotalPrice };
+    return { totalCost, totalPrice, profit, agentsTotalCost, agentsTotalPrice, subtotal };
   };
 
   const totals = calculateTotals();
@@ -85,6 +87,7 @@ const NewQuotation = () => {
       implementationPrice,
       monthlyMaintenanceCost,
       monthlyMaintenancePrice,
+      discount,
       notes,
       status: 'draft',
       totalCost: totals.totalCost,
@@ -113,6 +116,7 @@ const NewQuotation = () => {
       implementationPrice,
       monthlyMaintenanceCost,
       monthlyMaintenancePrice,
+      discount,
       notes,
       status: 'draft',
       totalCost: totals.totalCost,
@@ -160,6 +164,7 @@ const NewQuotation = () => {
       implementationPrice,
       monthlyMaintenanceCost,
       monthlyMaintenancePrice,
+      discount,
       notes,
       status: 'draft',
       totalCost: totals.totalCost,
@@ -366,9 +371,32 @@ const NewQuotation = () => {
                   <span className="text-foreground">{formatCurrency(monthlyMaintenancePrice)}</span>
                 </div>
                 
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Subtotal</span>
+                  <span className="text-foreground">{formatCurrency(totals.subtotal)}</span>
+                </div>
+
+                {/* Discount Input */}
+                <div className="border-t border-border/50 pt-4 space-y-2">
+                  <Label className="text-sm text-muted-foreground">Descuento</Label>
+                  <Input
+                    type="number"
+                    min={0}
+                    value={discount}
+                    onChange={e => setDiscount(Math.max(0, parseFloat(e.target.value) || 0))}
+                    placeholder="0"
+                  />
+                  {discount > 0 && (
+                    <div className="flex justify-between text-sm text-destructive">
+                      <span>Descuento aplicado</span>
+                      <span>-{formatCurrency(discount)}</span>
+                    </div>
+                  )}
+                </div>
+                
                 <div className="border-t border-border/50 pt-4">
                   <div className="flex justify-between">
-                    <span className="font-medium text-foreground">Total Inicial</span>
+                    <span className="font-medium text-foreground">Total Final</span>
                     <span className="font-display font-bold text-primary text-xl">
                       {formatCurrency(totals.totalPrice)}
                     </span>
