@@ -3,6 +3,7 @@ import { Layout } from '@/components/layout/Layout';
 import { QuotationCard } from '@/components/quotation/QuotationCard';
 import { useSupabaseQuotations, QuotationWithAgents } from '@/hooks/useSupabaseQuotations';
 import { generateQuotationPDF } from '@/lib/pdfGenerator';
+import { useAgencySettings } from '@/hooks/useAgencySettings';
 import { Quotation } from '@/types/quotation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,6 +12,7 @@ import { Plus, Search, Filter, Loader2 } from 'lucide-react';
 
 const QuotationsList = () => {
   const { quotations, loading, deleteQuotation } = useSupabaseQuotations();
+  const { settings: agencySettings } = useAgencySettings();
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
 
@@ -132,7 +134,7 @@ const QuotationsList = () => {
                 key={quotation.id}
                 quotation={mapToQuotation(quotation)}
                 onDelete={deleteQuotation}
-                onDownload={(q) => generateQuotationPDF(q)}
+                onDownload={(q) => generateQuotationPDF(q, agencySettings)}
               />
             ))}
           </div>

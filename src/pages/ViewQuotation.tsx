@@ -4,6 +4,7 @@ import { Layout } from '@/components/layout/Layout';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { generateQuotationPDF } from '@/lib/pdfGenerator';
+import { useAgencySettings } from '@/hooks/useAgencySettings';
 import { Quotation } from '@/types/quotation';
 import { ArrowLeft, FileDown, Edit, Loader2, Calendar, Mail, Phone, Building2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
@@ -15,6 +16,7 @@ const ViewQuotation = () => {
   const navigate = useNavigate();
   const [quotation, setQuotation] = useState<Quotation | null>(null);
   const [loading, setLoading] = useState(true);
+  const { settings: agencySettings } = useAgencySettings();
 
   useEffect(() => {
     const fetchQuotation = async () => {
@@ -160,7 +162,7 @@ const ViewQuotation = () => {
                 Editar
               </Button>
             </Link>
-            <Button onClick={() => generateQuotationPDF(quotation)} className="gap-2">
+            <Button onClick={() => generateQuotationPDF(quotation, agencySettings)} className="gap-2">
               <FileDown className="w-4 h-4" />
               Descargar PDF
             </Button>

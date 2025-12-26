@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useSupabaseQuotations } from '@/hooks/useSupabaseQuotations';
+import { BrandingSettings } from '@/components/settings/BrandingSettings';
 import { toast } from 'sonner';
 import { Save, Plus, Trash2, Settings as SettingsIcon, Loader2 } from 'lucide-react';
 
@@ -86,6 +87,9 @@ const Settings = () => {
             Personaliza las características base y configuración de tu agencia
           </p>
         </div>
+
+        {/* Branding Settings */}
+        <BrandingSettings />
 
         {/* Features Configuration */}
         <div className="glass rounded-xl p-6">

@@ -1,8 +1,14 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { Quotation } from '@/types/quotation';
+import { AgencySettings } from '@/hooks/useAgencySettings';
 
-export const generateQuotationPDF = (quotation: Quotation) => {
+export interface PDFGeneratorOptions {
+  quotation: Quotation;
+  agencySettings?: AgencySettings | null;
+}
+
+export const generateQuotationPDF = (quotation: Quotation, agencySettings?: AgencySettings | null) => {
   const doc = new jsPDF();
   
   const formatCurrency = (value: number) => {
@@ -12,19 +18,43 @@ export const generateQuotationPDF = (quotation: Quotation) => {
     }).format(value);
   };
 
+  const agencyName = agencySettings?.agency_name || 'AI AGENCY';
+  const agencyAddress = agencySettings?.address || '';
+  const agencyPhone = agencySettings?.phone || '';
+  const agencyEmail = agencySettings?.email || '';
+  const agencyWebsite = agencySettings?.website || '';
+
   // Header
   doc.setFillColor(15, 23, 42);
   doc.rect(0, 0, 220, 45, 'F');
   
-  doc.setTextColor(20, 184, 166);
-  doc.setFontSize(24);
-  doc.setFont('helvetica', 'bold');
-  doc.text('AI AGENCY', 20, 25);
+  // Logo handling
+  let textStartX = 20;
   
+  if (agencySettings?.logo_url) {
+    // We'll add the logo if available - for now we'll just use text
+    // Note: Adding images from URLs requires async loading
+    textStartX = 20;
+  }
+  
+  doc.setTextColor(20, 184, 166);
+  doc.setFontSize(22);
+  doc.setFont('helvetica', 'bold');
+  doc.text(agencyName.toUpperCase(), textStartX, 22);
+  
+  // Tagline / Contact info in header
   doc.setTextColor(255, 255, 255);
-  doc.setFontSize(10);
+  doc.setFontSize(9);
   doc.setFont('helvetica', 'normal');
-  doc.text('Soluciones de Inteligencia Artificial', 20, 33);
+  
+  let headerInfoY = 30;
+  if (agencyEmail) {
+    doc.text(agencyEmail, textStartX, headerInfoY);
+    headerInfoY += 5;
+  }
+  if (agencyPhone) {
+    doc.text(agencyPhone, textStartX, headerInfoY);
+  }
   
   // Quote number and date
   doc.setTextColor(20, 184, 166);
@@ -140,15 +170,25 @@ export const generateQuotationPDF = (quotation: Quotation) => {
     doc.text(splitNotes, 20, finalY + 18);
   }
 
-  // Footer
+  // Footer with agency info
   const pageHeight = doc.internal.pageSize.height;
   doc.setFillColor(15, 23, 42);
-  doc.rect(0, pageHeight - 25, 220, 25, 'F');
+  doc.rect(0, pageHeight - 30, 220, 30, 'F');
   
   doc.setTextColor(150, 150, 150);
   doc.setFontSize(8);
-  doc.text('Esta cotización es válida por 30 días a partir de la fecha de emisión.', 105, pageHeight - 15, { align: 'center' });
-  doc.text('Los precios están expresados en USD y no incluyen impuestos aplicables.', 105, pageHeight - 9, { align: 'center' });
+  
+  // Agency contact in footer
+  if (agencyAddress) {
+    doc.text(agencyAddress, 105, pageHeight - 22, { align: 'center' });
+  }
+  if (agencyWebsite) {
+    doc.setTextColor(20, 184, 166);
+    doc.text(agencyWebsite, 105, pageHeight - 16, { align: 'center' });
+  }
+  
+  doc.setTextColor(150, 150, 150);
+  doc.text('Esta cotización es válida por 30 días a partir de la fecha de emisión.', 105, pageHeight - 10, { align: 'center' });
 
   // Save
   doc.save(`cotizacion-${quotation.clientName.replace(/\s+/g, '-').toLowerCase()}-${quotation.id.slice(0, 8)}.pdf`);
