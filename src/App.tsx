@@ -9,6 +9,8 @@ import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import NewQuotation from "./pages/NewQuotation";
 import QuotationsList from "./pages/QuotationsList";
+import ViewQuotation from "./pages/ViewQuotation";
+import EditQuotation from "./pages/EditQuotation";
 import Templates from "./pages/Templates";
 import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
@@ -45,6 +47,22 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <QuotationsList />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/quotation/:id"
+              element={
+                <ProtectedRoute>
+                  <ViewQuotation />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/edit/:id"
+              element={
+                <ProtectedRoute>
+                  <EditQuotation />
                 </ProtectedRoute>
               }
             />
