@@ -11,7 +11,7 @@ import { Link } from 'react-router-dom';
 import { Plus, Search, Filter, Loader2 } from 'lucide-react';
 
 const QuotationsList = () => {
-  const { quotations, loading, deleteQuotation } = useSupabaseQuotations();
+  const { quotations, loading, deleteQuotation, duplicateQuotation } = useSupabaseQuotations();
   const { settings: agencySettings } = useAgencySettings();
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
@@ -135,6 +135,7 @@ const QuotationsList = () => {
                 quotation={mapToQuotation(quotation)}
                 onDelete={deleteQuotation}
                 onDownload={(q) => generateQuotationPDF(q, agencySettings)}
+                onDuplicate={duplicateQuotation}
               />
             ))}
           </div>
