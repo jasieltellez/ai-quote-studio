@@ -4,6 +4,17 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm install
 COPY . .
+
+# Define build argument for the environment variable
+ARG VITE_SUPABASE_URL
+ARG VITE_SUPABASE_PROJECT_ID
+ARG VITE_SUPABASE_PUBLISHABLE_KEY
+
+# Set environment variable during the build process
+ENV VITE_SUPABASE_URL=$VITE_SUPABASE_URL
+ENV VITE_SUPABASE_PROJECT_ID=$VITE_SUPABASE_PROJECT_ID
+ENV VITE_SUPABASE_PUBLISHABLE_KEY=$VITE_SUPABASE_PUBLISHABLE_KEY
+
 RUN npm run build
  
 # Production Stage
