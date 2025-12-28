@@ -244,6 +244,84 @@ export const useSupabaseQuotations = () => {
     toast.success('Cotización eliminada');
   };
 
+  const duplicateQuotation = async (id: string) => {
+    if (!user) return null;
+
+    // Find the quotation to duplicate
+    const original = quotations.find(q => q.id === id);
+    if (!original) {
+      toast.error('Cotización no encontrada');
+      return null;
+    }
+
+    // Insert new quotation as draft
+    const { data: quotationData, error: quotationError } = await supabase
+      .from('quotations')
+      .insert({
+        user_id: user.id,
+        client_name: original.client_name,
+        client_email: original.client_email,
+        client_company: original.client_company,
+        client_phone: original.client_phone,
+        implementation_cost: original.implementation_cost,
+        implementation_price: original.implementation_price,
+        monthly_maintenance_cost: original.monthly_maintenance_cost,
+        monthly_maintenance_price: original.monthly_maintenance_price,
+        discount: original.discount,
+        notes: original.notes,
+        status: 'draft',
+        total_cost: original.total_cost,
+        total_price: original.total_price,
+        profit: original.profit,
+      })
+      .select()
+      .single();
+
+    if (quotationError) {
+      toast.error('Error al duplicar la cotización');
+      console.error('Error duplicating quotation:', quotationError);
+      return null;
+    }
+
+    // Duplicate agents and their features
+    for (const agent of original.agents) {
+      const { data: agentData, error: agentError } = await supabase
+        .from('quotation_agents')
+        .insert({
+          quotation_id: quotationData.id,
+          name: agent.name,
+          description: agent.description,
+          custom_cost: agent.custom_cost,
+          custom_price: agent.custom_price,
+          quantity: agent.quantity,
+        })
+        .select()
+        .single();
+
+      if (agentError) {
+        console.error('Error duplicating agent:', agentError);
+        continue;
+      }
+
+      // Duplicate features for this agent
+      for (const feature of agent.features) {
+        await supabase
+          .from('quotation_agent_features')
+          .insert({
+            quotation_agent_id: agentData.id,
+            name: feature.name,
+            description: feature.description,
+            base_cost: feature.base_cost,
+            base_price: feature.base_price,
+          });
+      }
+    }
+
+    await fetchQuotations();
+    toast.success('Cotización duplicada como borrador');
+    return quotationData;
+  };
+
   const saveTemplate = async (template: {
     id?: string;
     name: string;
@@ -447,6 +525,7 @@ export const useSupabaseQuotations = () => {
     loading,
     saveQuotation,
     deleteQuotation,
+    duplicateQuotation,
     saveTemplate,
     deleteTemplate,
     saveFeature,

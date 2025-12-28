@@ -1,6 +1,6 @@
 import { Quotation } from '@/types/quotation';
 import { Button } from '@/components/ui/button';
-import { FileText, Download, Trash2, Eye, Edit } from 'lucide-react';
+import { FileText, Download, Trash2, Eye, Edit, Copy } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Link } from 'react-router-dom';
 
@@ -8,6 +8,7 @@ interface QuotationCardProps {
   quotation: Quotation;
   onDelete: (id: string) => void;
   onDownload: (quotation: Quotation) => void;
+  onDuplicate?: (id: string) => void;
 }
 
 const statusColors = {
@@ -24,7 +25,7 @@ const statusLabels = {
   rejected: 'Rechazada',
 };
 
-export const QuotationCard = ({ quotation, onDelete, onDownload }: QuotationCardProps) => {
+export const QuotationCard = ({ quotation, onDelete, onDownload, onDuplicate }: QuotationCardProps) => {
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('es-MX', {
       style: 'currency',
@@ -76,7 +77,7 @@ export const QuotationCard = ({ quotation, onDelete, onDownload }: QuotationCard
             {formatCurrency(quotation.totalPrice)}
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-1">
           <Link to={`/quotation/${quotation.id}`}>
             <Button variant="ghost" size="icon" title="Ver">
               <Eye className="w-4 h-4" />
@@ -87,6 +88,16 @@ export const QuotationCard = ({ quotation, onDelete, onDownload }: QuotationCard
               <Edit className="w-4 h-4" />
             </Button>
           </Link>
+          {onDuplicate && (
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={() => onDuplicate(quotation.id)}
+              title="Duplicar"
+            >
+              <Copy className="w-4 h-4" />
+            </Button>
+          )}
           <Button 
             variant="ghost" 
             size="icon" 
