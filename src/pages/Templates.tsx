@@ -8,10 +8,10 @@ import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { toast } from 'sonner';
-import { Plus, Bot, Trash2, Edit, Save, Loader2 } from 'lucide-react';
+import { Plus, Bot, Trash2, Edit, Save, Loader2, Copy } from 'lucide-react';
 
 const Templates = () => {
-  const { templates, features, saveTemplate, deleteTemplate, loading } = useSupabaseQuotations();
+  const { templates, features, saveTemplate, deleteTemplate, duplicateTemplate, loading } = useSupabaseQuotations();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingTemplate, setEditingTemplate] = useState<TemplateWithFeatures | null>(null);
 
@@ -256,19 +256,29 @@ const Templates = () => {
                       {formatCurrency(Number(template.base_price))}
                     </p>
                   </div>
-                  <div className="flex gap-2">
+                  <div className="flex gap-1">
                     <Button
                       variant="ghost"
                       size="icon"
                       onClick={() => openEditDialog(template)}
+                      title="Editar"
                     >
                       <Edit className="w-4 h-4" />
                     </Button>
                     <Button
                       variant="ghost"
                       size="icon"
+                      onClick={() => duplicateTemplate(template.id)}
+                      title="Duplicar"
+                    >
+                      <Copy className="w-4 h-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
                       onClick={() => deleteTemplate(template.id)}
                       className="text-destructive hover:text-destructive"
+                      title="Eliminar"
                     >
                       <Trash2 className="w-4 h-4" />
                     </Button>

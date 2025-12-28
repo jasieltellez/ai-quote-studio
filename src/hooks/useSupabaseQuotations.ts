@@ -426,6 +426,52 @@ export const useSupabaseQuotations = () => {
     toast.success('Plantilla eliminada');
   };
 
+  const duplicateTemplate = async (id: string) => {
+    if (!user) return null;
+
+    // Find the template to duplicate
+    const original = templates.find(t => t.id === id);
+    if (!original) {
+      toast.error('Plantilla no encontrada');
+      return null;
+    }
+
+    // Insert new template
+    const { data: templateData, error: templateError } = await supabase
+      .from('agent_templates')
+      .insert({
+        user_id: user.id,
+        name: `${original.name} (copia)`,
+        description: original.description,
+        base_cost: original.base_cost,
+        base_price: original.base_price,
+      })
+      .select()
+      .single();
+
+    if (templateError) {
+      toast.error('Error al duplicar la plantilla');
+      console.error('Error duplicating template:', templateError);
+      return null;
+    }
+
+    // Duplicate template features
+    for (const tf of original.features) {
+      await supabase
+        .from('template_features')
+        .insert({
+          template_id: templateData.id,
+          feature_id: tf.feature.id,
+          base_cost: tf.base_cost,
+          base_price: tf.base_price,
+        });
+    }
+
+    await fetchTemplates();
+    toast.success('Plantilla duplicada');
+    return templateData;
+  };
+
   const saveFeature = async (feature: {
     id?: string;
     name: string;
@@ -528,6 +574,7 @@ export const useSupabaseQuotations = () => {
     duplicateQuotation,
     saveTemplate,
     deleteTemplate,
+    duplicateTemplate,
     saveFeature,
     deleteFeature,
     initializeDefaultFeatures,
